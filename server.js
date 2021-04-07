@@ -14,6 +14,10 @@ const schema = buildSchema(`
     message: String!
   }
 
+  type TotalCount {
+    totalCount: Int!
+  }
+
   type Time {
     hour: Int!
     minute: Int!
@@ -37,7 +41,17 @@ const schema = buildSchema(`
     Cat
     Fish
     Lizard
+    Spider
     Insect
+  }
+
+  type SpeciesType {
+    name: Species!
+  }
+
+  type PetCollection {
+    totalCount: Int!
+    petList: [Pet!]!
   }
 
   type Query {
@@ -45,10 +59,16 @@ const schema = buildSchema(`
     getMeal(time: MealTime!): Meal
     getPet(index:Int!): Pet
     allPets: [Pet!]!
+    countPets: Int!
     firstPet: Pet
     getTime: Time
     getRandom(range: Int!): Int
-    getRoll(sides: Int!, rolls: Int!): Die
+    getRoll(sides: Int!, rolls: [Int!]!): Die
+    getCount: TotalCount
+    petCollection: PetCollection
+    speciesCollection: SpeciesCollection
+    getSpecies: [SpeciesType!]!
+    getPetBySpecies(species: Species!): [Pet!]!
   }
 
   type Meal {
@@ -60,6 +80,11 @@ const schema = buildSchema(`
     name: String!
     species: Species!
   }
+
+  type SpeciesCollection {
+    species: [Species!]!
+  }
+
 `)
 
 // Define resolver
@@ -95,13 +120,38 @@ const root = {
     return Math.floor(Math.random() * range)
   },
   getRoll:({ sides, rolls }) => {
+    const dice = []
     let total = 0;
-    for (let i = 0; i <= rolls;i++){
+    for (let i = 0; i < rolls;i++){
       const num = Math.floor(Math.random() * sides)
+      dice.push(num)
       total += num
     }
-    return { sides, rolls, total }
-
+    console.log(rolls, sides, total)
+    return { sides, rolls: dice, total }
+  },
+  countPets:() => {
+    return petList.length
+  },
+  petCollection: () => {
+    return {totalCount: petList.length, petList }
+  },
+  speciesCollection: () => {
+    return ["Dog", "Cat","Fish","Lizard","Spider", "Insect"]
+  },
+  getSpecies:() => {
+    return [
+      {name: "Dog"},
+      {name: "Cat"},
+      {name: "Fish"},
+      {name: "Lizard"},
+      {name: "Spider"},
+      {name: "Insect"}
+    ]
+  },
+  getPetBySpecies:({species}) => {
+    // filter by species using filter functio
+    return petList.filter(pet => pet.species === species)
   }
 }
 
@@ -126,6 +176,4 @@ app.use('/graphql', graphqlHTTP({
 
 // Start this app
 const port = 4000
-app.listen(port, () => {
-  console.log(`Running on port ${port}`)
-})
+app.listen(port, () =>  console.log(`Running on port ${port}`))
